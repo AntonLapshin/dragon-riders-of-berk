@@ -1,12 +1,16 @@
 /** Pure wheel math: weighted picks + spin-target geometry (no DOM). */
 import type { WheelSeg } from './constants';
 
-/** Pick a segment index, honoring optional `weight` (default 1). */
+/**
+ * Pick a segment index, honoring optional `weight` (default 1).
+ * An explicit weight of 0 means "never pick" (used for display-only
+ * filler wedges on the taming wheel).
+ */
 export function weightedIndex(segs: WheelSeg[], random = Math.random): number {
-  const tot = segs.reduce((a, s) => a + (s.weight || 1), 0);
+  const tot = segs.reduce((a, s) => a + (s.weight ?? 1), 0);
   let r = random() * tot;
   for (let i = 0; i < segs.length; i++) {
-    r -= segs[i].weight || 1;
+    r -= segs[i].weight ?? 1;
     if (r < 0) return i;
   }
   return segs.length - 1;

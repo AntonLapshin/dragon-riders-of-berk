@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildPath, clampPos, nextNest, pathPoints } from './board';
+import { DRAGONS, FEAST, NESTS, STORM, TRAPS, type DragonId } from './constants';
+import { buildPath, clampPos, nextNest, pathPoints, TYPE_COLOR, TYPE_ICON } from './board';
 
 describe('buildPath', () => {
   it('builds 59 tiles indexed 0..58', () => {
@@ -50,5 +51,67 @@ describe('pathPoints', () => {
   it('emits one point per tile', () => {
     const tiles = buildPath();
     expect(pathPoints(tiles).split(' ')).toHaveLength(tiles.length);
+  });
+
+  it('emits x,y pairs', () => {
+    for (const pt of pathPoints(buildPath()).split(' ')) {
+      expect(pt.split(',')).toHaveLength(2);
+    }
+  });
+});
+
+describe('tile placement', () => {
+  it('places every configured nest / trap / feast / storm tile', () => {
+    const tiles = buildPath();
+    for (const [key, id] of Object.entries(NESTS)) {
+      const t = tiles[Number(key)];
+      expect(t.type).toBe('nest');
+      expect(t.dragon).toBe(id as DragonId);
+      expect(DRAGONS[id as DragonId]).toBeDefined();
+    }
+    for (const i of TRAPS) expect(tiles[i].type).toBe('trap');
+    for (const i of FEAST) expect(tiles[i].type).toBe('feast');
+    for (const i of STORM) expect(tiles[i].type).toBe('storm');
+  });
+
+  it('links rows with 5 turn-connector tiles', () => {
+    // Connectors only mark the winding position (no number badge); the
+    // tile-type overlay may still turn one into a nest/trap/etc.
+    const conns = buildPath().filter((t) => t.conn);
+    expect(conns).toHaveLength(5);
+    expect(conns.map((t) => t.i)).toEqual([9, 19, 29, 39, 49]);
+  });
+
+  it('cycles safe flavors deterministically', () => {
+    const a = buildPath().filter((t) => t.type === 'safe');
+    const b = buildPath().filter((t) => t.type === 'safe');
+    expect(a.length).toBeGreaterThan(0);
+    expect(a.map((t) => t.flavor)).toEqual(b.map((t) => t.flavor));
+  });
+});
+
+describe('nextNest chain', () => {
+  it('walks the whole nest chain in order', () => {
+    const chain: number[] = [];
+    let pos = 0;
+    for (;;) {
+      const n = nextNest(pos);
+      if (n == null) break;
+      chain.push(n);
+      pos = n;
+    }
+    expect(chain).toEqual([5, 9, 15, 19, 24, 28, 33, 38, 44, 50]);
+  });
+});
+
+describe('tile meta', () => {
+  it('colors every tile type', () => {
+    for (const t of buildPath()) {
+      expect(TYPE_COLOR[t.type]).toMatch(/^#/);
+    }
+  });
+
+  it('icons every non-nest special tile', () => {
+    expect(Object.keys(TYPE_ICON).sort()).toEqual(['feast', 'safe', 'storm', 'trap']);
   });
 });

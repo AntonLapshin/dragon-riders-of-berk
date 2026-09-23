@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { teamPower, randomLossIndex } from '../core/battle';
-import { buildPath, clampPos, nextNest } from '../core/board';
+import { buildPath, clampPos } from '../core/board';
 import {
   ALPHA_BASE,
   COURAGE,
@@ -11,6 +11,17 @@ import {
   type DragonId,
   type PlayerState,
 } from '../core/constants';
+import {
+  LAIR_REPEL_STEPS,
+  advanceTurn,
+  applyBattleDefeat,
+  applyNestChallenge,
+  classifyTile,
+  clearSkip,
+  grantSkip,
+  moveChoiceForfeits,
+  type ChallengeKey,
+} from '../engine/gameEngine';
 import { sound } from '../lib/sound';
 import { sleep } from '../utils/sleep';
 import type { WheelHandle } from '../components/molecules/Wheel';
@@ -30,7 +41,7 @@ export type ModalState =
   | { kind: 'win'; winnerId: number }
   | null;
 
-export type ChallengeKey = 'catch' | 'catchfeast' | 'escape' | 'trap';
+export type { ChallengeKey };
 
 /**
  * Full game state machine (view model). Owns players, turn flow, movement
@@ -146,88 +157,110 @@ export function useGame() {
     [pushLog],
   );
 
+  /**
+   * Tile-resolution driver. All rule decisions come from `src/engine` —
+   * this function only animates, shows modals, and plays sounds.
+   *
+   * Bug fixes vs the original: retreat moves (nest escape, lair repel) now
+   * re-resolve their destination tile in the loop below, and extra-turn
+   * flags accumulate (`||=`) across the whole chain so a storm ride into a
+   * feast can never drop the extra spin.
+   */
   const resolveTile = useCallback(
-    async (playerIdx: number, depth = 0): Promise<'won' | void> => {
+    async (playerIdx: number): Promise<'won' | void> => {
       const p = () => playersRef.current[playerIdx];
-      const t = tiles[p().pos];
-      highlightTile(p().pos);
+      let stormDepth = 0;
+      // Guard against pathological ride/repel cycles; the board cannot
+      // chain longer than this in practice.
+      for (let hops = 0; hops < 12; hops++) {
+        const at = tiles[p().pos];
+        highlightTile(p().pos);
+        const task = classifyTile(at.type, {
+          player: p(),
+          pos: p().pos,
+          dragonId: (at.dragon as DragonId | undefined) ?? null,
+          stormDepth,
+        });
 
-      switch (t.type) {
-        case 'safe': {
-          pushLog(`<b>${p().name}</b>: ${t.flavor}`, p().color);
-          await showEvent('✦', 'Safe Skies', `<b>${p().name}</b> — ${t.flavor}`, '#8fa3c8');
-          break;
-        }
-        case 'trap': {
-          syncPlayers(playersRef.current.map((pl, k) => (k === playerIdx ? { ...pl, skip: true, skipWhy: 'net' as const } : pl)));
-          sound.bad();
-          pushLog(`🪤 <b>${p().name}</b> got caught in a trapper net — next turn lost.`, '#ff5d5d');
-          await showEvent('🪤', "Trapper's Net!", `<b>${p().name}</b> is tangled in a dragon trapper's net and <b>loses the next turn</b>!`, '#ff5d5d');
-          break;
-        }
-        case 'feast': {
-          sound.good();
-          extraTurnRef.current = true;
-          pushLog(`🐟 <b>${p().name}</b> found a fish feast — extra spin!`, '#ffc93c');
-          await showEvent('🐟', 'Fish Feast!', `<b>${p().name}</b> devours a giant fish feast and is full of energy — <b>spin again</b>!`, '#ffc93c');
-          break;
-        }
-        case 'storm': {
-          if (depth >= 2) {
-            await showEvent('🌀', 'Storm Fizzles', `The storm wind dies down around <b>${p().name}</b>... nothing happens.`, '#4dd7fe');
-            break;
+        switch (task.kind) {
+          case 'safe': {
+            pushLog(`<b>${p().name}</b>: ${at.flavor}`, p().color);
+            await showEvent('✦', 'Safe Skies', `<b>${p().name}</b> — ${at.flavor}`, '#8fa3c8');
+            return;
           }
-          const target = nextNest(p().pos);
-          if (target == null) {
-            await showEvent('🌀', 'Storm Fizzles', `The storm wind dies down around <b>${p().name}</b>... nothing happens.`, '#4dd7fe');
-            break;
+          case 'trap': {
+            syncPlayers(playersRef.current.map((pl, k) => (k === playerIdx ? grantSkip(pl, 'net') : pl)));
+            sound.bad();
+            pushLog(`🪤 <b>${p().name}</b> got caught in a trapper net — next turn lost.`, '#ff5d5d');
+            await showEvent('🪤', "Trapper's Net!", `<b>${p().name}</b> is tangled in a dragon trapper's net and <b>loses the next turn</b>!`, '#ff5d5d');
+            return;
           }
-          sound.roar();
-          pushLog(`🌀 A storm wind carried <b>${p().name}</b> to tile ${target}.`, '#4dd7fe');
-          await showEvent(
-            '🌀',
-            'Storm Vortex!',
-            `The howling wind scoops up <b>${p().name}</b> and carries them straight to <b>${DRAGONS[tiles[target].dragon as DragonId].name}</b>'s nest (tile ${target})!`,
-            '#4dd7fe',
-          );
-          await movePlayer(playerIdx, target - p().pos);
-          await resolveTile(playerIdx, depth + 1);
-          break;
-        }
-        case 'nest': {
-          const dragonId = t.dragon as DragonId;
-          const d = DRAGONS[dragonId];
-          if (p().dragons.includes(dragonId)) {
+          case 'feast': {
+            sound.good();
+            extraTurnRef.current = true;
+            pushLog(`🐟 <b>${p().name}</b> found a fish feast — extra spin!`, '#ffc93c');
+            await showEvent('🐟', 'Fish Feast!', `<b>${p().name}</b> devours a giant fish feast and is full of energy — <b>spin again</b>!`, '#ffc93c');
+            return;
+          }
+          case 'stormFizzle': {
+            await showEvent('🌀', 'Storm Fizzles', `The storm wind dies down around <b>${p().name}</b>... nothing happens.`, '#4dd7fe');
+            return;
+          }
+          case 'stormRide': {
+            const target = task.stormTo as number;
+            sound.roar();
+            pushLog(`🌀 A storm wind carried <b>${p().name}</b> to tile ${target}.`, '#4dd7fe');
+            await showEvent(
+              '🌀',
+              'Storm Vortex!',
+              `The howling wind scoops up <b>${p().name}</b> and carries them straight to <b>${DRAGONS[tiles[target].dragon as DragonId].name}</b>'s nest (tile ${target})!`,
+              '#4dd7fe',
+            );
+            await movePlayer(playerIdx, target - p().pos);
+            stormDepth += 1;
+            continue;
+          }
+          case 'nestOwned': {
+            const dragonId = at.dragon as DragonId;
+            const d = DRAGONS[dragonId];
             sound.good();
             extraTurnRef.current = true;
             pushLog(`💚 <b>${p().name}</b> reunited with ${d.name} — extra spin!`, '#59d98c');
             await showEvent('💚', 'An Old Friend!', `<b>${d.name}</b> greets <b>${p().name}</b> with a happy warble. Already part of the flock — <b>spin again</b>!`, '#59d98c');
-            break;
+            return;
           }
-          if (p().dragons.length >= MAX_DRAGONS) {
+          case 'nestFull': {
+            const dragonId = at.dragon as DragonId;
+            const d = DRAGONS[dragonId];
             pushLog(`${d.name} greeted <b>${p().name}</b>, whose flock is already full.`, '#59d98c');
             await showEvent('🐉', 'Flock Is Full!', `<b>${d.name}</b> circles <b>${p().name}</b> happily, but the flock of ${MAX_DRAGONS} is already complete. Onward!`, '#59d98c');
-            break;
+            return;
           }
-          const key = await awaitModal<ChallengeKey>({ kind: 'challenge', dragonId, playerName: p().name });
-          if (key === 'catch' || key === 'catchfeast') {
-            syncPlayers(playersRef.current.map((pl, k) => (k === playerIdx ? { ...pl, dragons: [...pl.dragons, dragonId] } : pl)));
-            sound.good();
-            pushLog(`🐉 <b>${p().name}</b> tamed <b>${d.name}</b> the ${d.species}! (${p().dragons.length}/${MAX_DRAGONS})`, '#59d98c');
-            if (key === 'catchfeast') extraTurnRef.current = true;
-          } else if (key === 'escape') {
-            pushLog(`💨 ${d.name} slipped away from <b>${p().name}</b>.`, '#7d8db0');
-            await movePlayer(playerIdx, -2);
-            await showEvent('💨', 'The Dragon Escaped!', `<b>${d.name}</b> slipped through the clouds. <b>${p().name}</b> drifts back <b>2 spaces</b>.`, '#7d8db0');
-          } else {
-            syncPlayers(playersRef.current.map((pl, k) => (k === playerIdx ? { ...pl, skip: true, skipWhy: 'net' as const } : pl)));
+          case 'nestChallenge': {
+            const dragonId = at.dragon as DragonId;
+            const d = DRAGONS[dragonId];
+            const key = await awaitModal<ChallengeKey>({ kind: 'challenge', dragonId, playerName: p().name });
+            const res = applyNestChallenge(p(), dragonId, key);
+            syncPlayers(playersRef.current.map((pl, k) => (k === playerIdx ? res.player : pl)));
+            if (key === 'catch' || key === 'catchfeast') {
+              sound.good();
+              pushLog(`🐉 <b>${p().name}</b> tamed <b>${d.name}</b> the ${d.species}! (${p().dragons.length}/${MAX_DRAGONS})`, '#59d98c');
+              if (res.extraGranted) extraTurnRef.current = true;
+              return;
+            }
+            if (key === 'escape') {
+              pushLog(`💨 ${d.name} slipped away from <b>${p().name}</b>.`, '#7d8db0');
+              await movePlayer(playerIdx, -res.retreatBy);
+              await showEvent('💨', 'The Dragon Escaped!', `<b>${d.name}</b> slipped through the clouds. <b>${p().name}</b> drifts back <b>2 spaces</b>.`, '#7d8db0');
+              // FIX: re-resolve the tile the retreat lands on (it may be a
+              // trap/feast/storm/nest of its own).
+              continue;
+            }
             pushLog(`🪤 <b>${p().name}</b> triggered a net while chasing ${d.name}.`, '#ff5d5d');
             await showEvent('🪤', 'Net Trap!', `While chasing <b>${d.name}</b>, <b>${p().name}</b> triggers a hidden net — <b>next turn lost</b>!`, '#ff5d5d');
+            return;
           }
-          break;
-        }
-        case 'lair': {
-          if (p().dragons.length >= 1) {
+          case 'lairBattle': {
             const won = await awaitModal<boolean>({ kind: 'battle', playerId: playerIdx });
             if (won) {
               endGame(playerIdx);
@@ -236,13 +269,9 @@ export function useGame() {
             let lostName = '';
             if (p().dragons.length) {
               const ri = randomLossIndex(p().dragons.length);
-              const lost = p().dragons[ri];
-              lostName = DRAGONS[lost].name;
-              syncPlayers(
-                playersRef.current.map((pl, k) =>
-                  k === playerIdx ? { ...pl, dragons: pl.dragons.filter((_, j) => j !== ri) } : pl,
-                ),
-              );
+              const res = applyBattleDefeat(p(), ri);
+              lostName = res.lostDragon ? DRAGONS[res.lostDragon].name : '';
+              syncPlayers(playersRef.current.map((pl, k) => (k === playerIdx ? res.player : pl)));
               pushLog(`💔 <b>${p().name}</b> lost ${lostName} as the flock scattered!`, '#ff5d5d');
             }
             sound.bad();
@@ -254,7 +283,9 @@ export function useGame() {
               '#9fdcff',
             );
             await teleportPlayer(playerIdx, 0);
-          } else {
+            return;
+          }
+          case 'lairRepel': {
             sound.roar();
             pushLog(`🧊 The Alpha blasted <b>${p().name}</b> away from the lair — no dragons to fight with!`, '#9fdcff');
             await showEvent(
@@ -263,12 +294,13 @@ export function useGame() {
               `<b>${p().name}</b> arrives with <b>no dragons</b>! The Glacial Tyrant's roar blasts them back <b>8 spaces</b>. Tame a flock first!`,
               '#9fdcff',
             );
-            await movePlayer(playerIdx, -8);
+            await movePlayer(playerIdx, -LAIR_REPEL_STEPS);
+            // FIX: re-resolve the tile the blast lands on.
+            continue;
           }
-          break;
+          default:
+            return;
         }
-        case 'start':
-          break;
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -286,14 +318,23 @@ export function useGame() {
     else setTurnMsg(`🎡 Spin the wheel! Find nests to build your flock`);
   }, []);
 
+  /**
+   * Advance to the next turn. The engine arbitrates extra turns vs pending
+   * skips: an extra turn stays on the same player WITHOUT consuming a
+   * pending skip (the skip is served on the following turn instead).
+   */
   const nextTurn = useCallback(
-    (extra: boolean) => {
-      if (extra) {
-        pushLog(`✨ <b>${cur().name}</b> takes an extra turn!`, cur().color);
+    (extraGranted: boolean) => {
+      const finished = playersRef.current[currentRef.current];
+      const adv = advanceTurn(currentRef.current, playersRef.current.length, {
+        extraGranted,
+        skipPending: finished.skip,
+      });
+      if (adv.isExtra) {
+        pushLog(`✨ <b>${finished.name}</b> takes an extra turn!`, finished.color);
       } else {
-        const n = 1 - currentRef.current;
-        currentRef.current = n;
-        setCurrent(n);
+        currentRef.current = adv.nextCurrent;
+        setCurrent(adv.nextCurrent);
       }
       beginTurn();
     },
@@ -305,7 +346,7 @@ export function useGame() {
     const p = cur();
     if (p.skip) {
       const why = p.skipWhy || 'net';
-      syncPlayers(playersRef.current.map((pl) => (pl.id === p.id ? { ...pl, skip: false, skipWhy: null } : pl)));
+      syncPlayers(playersRef.current.map((pl) => (pl.id === p.id ? clearSkip(pl) : pl)));
       setSpinDisabled(true);
       setTurnMsg(`⏳ ${p.name} sits this turn out.`);
       if (why === 'choice') {
@@ -332,15 +373,21 @@ export function useGame() {
       extraTurnRef.current = false;
       setTurnMsg('Spinning...');
       const segIdx = await mainWheelRef.current?.spin();
-      if (segIdx == null) return;
+      if (segIdx == null) {
+        // Wheel busy or unavailable: hand the spin back instead of
+        // stranding the player with a disabled wheel.
+        setSpinDisabled(false);
+        turnHint(p());
+        return;
+      }
       const val = MAIN_SEGS[segIdx].value as number;
       sound.good();
       setTurnMsg(`${p().name} spins <b>${val}</b>!`);
       pushLog(`🎡 <b>${p().name}</b> spun a ${val}.`, p().color);
       await sleep(300);
       const steps = await awaitModal<number>({ kind: 'move', val, atStart: p().pos === 0, playerName: p().name });
-      if (steps !== val) {
-        syncPlayers(playersRef.current.map((pl, k) => (k === idx ? { ...pl, skip: true, skipWhy: 'choice' as const } : pl)));
+      if (moveChoiceForfeits(val, steps)) {
+        syncPlayers(playersRef.current.map((pl, k) => (k === idx ? grantSkip(pl, 'choice') : pl)));
         pushLog(`🐾 <b>${p().name}</b> chose to move ${steps > 0 ? 'forward' : 'backward'} 1 — next turn is forfeit.`, p().color);
         setTurnMsg(`${p().name} moves ${steps > 0 ? 'forward' : 'back'} 1 — next turn forfeit!`);
       } else {
@@ -353,7 +400,7 @@ export function useGame() {
     } finally {
       busyRef.current = false;
     }
-  }, [awaitModal, movePlayer, nextTurn, phase, pushLog, resolveTile, syncPlayers]);
+  }, [awaitModal, movePlayer, nextTurn, phase, pushLog, resolveTile, syncPlayers, turnHint]);
 
   /* ---------- init ---------- */
 

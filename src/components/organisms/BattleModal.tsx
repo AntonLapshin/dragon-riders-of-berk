@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ALPHA_BASE, BATTLE_SEGS, COURAGE, IMG, type PlayerState } from '../../core/constants';
-import { resolveBattleRound, teamPower } from '../../core/battle';
+import { applyBattleRound, battleInProgress, createBattle } from '../../engine/battleEngine';
 import { sound } from '../../lib/sound';
 import { sleep } from '../../utils/sleep';
 import { Button } from '../atoms/Button';
@@ -14,17 +14,22 @@ interface BattleModalProps {
   onEnd: (won: boolean) => void;
 }
 
-/** Final-boss battle dialog: spin vs the Alpha, first to 3 hits (organism). */
+/** Final-boss battle dialog: spin vs the Alpha, first to 3 hits (organism).
+ *
+ * Rendering only — every rule (round math, HP, win/loss) is computed by
+ * `src/engine/battleEngine.ts`.
+ */
 export function BattleModal({ player, onLog, onEnd }: BattleModalProps) {
-  const team = teamPower(player.dragons);
+  const [battle, setBattle] = useState(() => createBattle(player.dragons));
+  const team = battle.team;
   const wheelRef = useRef<WheelHandle>(null);
-  const [pHp, setPHp] = useState(3);
-  const [aHp, setAHp] = useState(3);
   const [spinning, setSpinning] = useState(false);
   const [alphaRoll, setAlphaRoll] = useState('?');
   const [hurt, setHurt] = useState(0);
   const [readout, setReadout] = useState<string>('Ties clash with no damage. Good luck, rider!');
-  const [finished, setFinished] = useState<'won' | 'lost' | null>(null);
+  const finished = battle.finished;
+  const pHp = battle.playerHp;
+  const aHp = battle.alphaHp;
 
   useEffect(() => {
     sound.roar();
@@ -40,7 +45,7 @@ export function BattleModal({ player, onLog, onEnd }: BattleModalProps) {
   };
 
   const attack = async () => {
-    if (spinning || finished) return;
+    if (spinning || !battleInProgress(battle)) return;
     setSpinning(true);
     const idx = await wheelRef.current?.spin(2.8);
     if (idx == null) {
@@ -50,16 +55,15 @@ export function BattleModal({ player, onLog, onEnd }: BattleModalProps) {
     const pv = BATTLE_SEGS[idx].value as number;
     const av = 1 + Math.floor(Math.random() * 10);
     await animateRoll(av);
-    const { playerTotal, alphaTotal, crit, outcome } = resolveBattleRound({ team, playerSpin: pv, alphaSpin: av });
+    const next = applyBattleRound(battle, pv, av);
+    const { lastPlayerTotal: playerTotal, lastAlphaTotal: alphaTotal, lastCrit: crit, lastOutcome: outcome } = next;
+    setBattle(next);
 
     if (outcome === 'hit') {
-      const next = aHp - 1;
-      setAHp(next);
       sound.good();
       setHurt((h) => h + 1);
       onLog(`💥 <b>${player.name}</b>'s flock hit the Alpha (${playerTotal} vs ${alphaTotal})!`, player.color);
-      if (next <= 0) {
-        setFinished('won');
+      if (next.finished === 'won') {
         setReadout(`👑 <b>THE ALPHA FALLS!</b> ${player.name}'s dragons reign supreme!`);
         setSpinning(false);
         return;
@@ -68,12 +72,9 @@ export function BattleModal({ player, onLog, onEnd }: BattleModalProps) {
         `💥 <b>HIT!</b> ${team}+${pv}+${COURAGE}${crit ? `+${crit} ⚡plasma blast` : ''} = <b>${playerTotal}</b> vs ${alphaTotal}!`,
       );
     } else if (outcome === 'hurt') {
-      const next = pHp - 1;
-      setPHp(next);
       sound.bad();
       onLog(`🧊 The Alpha blasted <b>${player.name}</b> (${alphaTotal} vs ${playerTotal}).`, '#9fdcff');
-      if (next <= 0) {
-        setFinished('lost');
+      if (next.finished === 'lost') {
         setReadout(`😱 <b>The flock is scattered!</b>`);
         setSpinning(false);
         return;

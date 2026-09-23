@@ -75,23 +75,45 @@ Each round: **your spin + flock power + Rider's Courage (+6)** vs **Alpha's spin
 ## 🛠️ Development
 
 ```bash
-npm install   # install dependencies
-npm run dev   # start the dev server (http://localhost:5173)
-npm test      # run unit tests (Vitest — pure game logic in src/core)
-npm run build # type-check + production build into dist/
-npm run preview # preview the production build locally
+npm install          # install dependencies
+npm run dev          # start the dev server (http://localhost:5173)
+npm test             # run unit tests (Vitest)
+npm run test:coverage # unit tests with coverage (engine + utils at 100%)
+npm run build        # type-check + production build into dist/
+npm run preview      # preview the production build locally
 ```
+
+## 🧠 Architecture — UI ⇒ Game Engine ⇒ Utils
+
+All game rules live in the pure engine; the UI only animates, shows dialogs,
+and feeds player choices back into it:
+
+- **UI** (`src/components`, `src/hooks`, `src/lib`) — rendering, animation,
+  sound, modal promises. Contains no rule decisions.
+- **Game Engine** (`src/engine`, `src/core`) — every rule decision, 100%
+  unit-tested, no React/DOM/sound/timers:
+  - `src/engine/gameEngine.ts` — tile classification, taming outcomes,
+    battle defeat, turn arbitration (`advanceTurn`), chained-walk helper.
+  - `src/engine/battleEngine.ts` — Alpha-battle state machine.
+  - `src/core/` — board path, battle math, wheel math, shared constants.
+- **Utils** (`src/engine/utils.ts`, `src/utils`) — pure reusable helpers
+  (clamping, step paths, player rotation, extra-vs-skip arbitration),
+  also 100% unit-tested.
 
 ## 🧱 Project structure (Atomic Design)
 
 ```
 src/
-├── core/          # pure game logic — no React, no DOM (unit-tested)
+├── engine/        # pure rule decisions — no React, no DOM (unit-tested)
+│   ├── gameEngine.ts   # tile tasks, taming/battle-defeat, turn arbitration
+│   ├── battleEngine.ts # Alpha-battle state machine (HP, rounds, win/loss)
+│   └── utils.ts        # pure helpers (clamp, step paths, rotation, advance)
+├── core/          # pure game data + math — no React, no DOM (unit-tested)
 │   ├── constants.ts  # dragons, artwork, board config, wheel segments
 │   ├── board.ts      # serpentine 59-tile path, tile typing, nest lookup
 │   ├── wheels.ts     # weighted picks + spin-target geometry
 │   └── battle.ts     # flock power + battle-round math
-├── utils/         # sleep() and other tiny pure helpers
+├── utils/         # sleep() and other tiny pure helpers (unit-tested)
 ├── lib/           # sound engine (WebAudio singleton)
 ├── hooks/
 │   └── useGame.ts    # full turn-loop state machine (view model)

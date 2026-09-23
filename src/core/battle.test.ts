@@ -41,4 +41,22 @@ describe('randomLossIndex', () => {
       expect(idx).toBeLessThan(5);
     }
   });
+
+  it('is deterministic with injected random', () => {
+    expect(randomLossIndex(5, () => 0)).toBe(0);
+    expect(randomLossIndex(5, () => 0.9999)).toBe(4);
+    expect(randomLossIndex(1, () => 0.42)).toBe(0);
+  });
+});
+
+describe('resolveBattleRound boundaries', () => {
+  it('grants no crit below a natural 10', () => {
+    const r = resolveBattleRound({ team: 0, playerSpin: 9, alphaSpin: 1 });
+    expect(r.crit).toBe(0);
+    expect(r.playerTotal).toBe(0 + 9 + 6);
+  });
+
+  it('sums every dragon power into the team', () => {
+    expect(teamPower(['barf', 'stormfly', 'cloudjumper', 'hookfang', 'grump'])).toBe(3 + 3 + 4 + 4 + 2);
+  });
 });
