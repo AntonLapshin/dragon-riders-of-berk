@@ -10,10 +10,12 @@ import { ChallengeModal } from '../organisms/ChallengeModal';
 import { EventModal } from '../organisms/EventModal';
 import { HowToModal } from '../organisms/HowToModal';
 import { MoveChoiceModal } from '../organisms/MoveChoiceModal';
+import { PlayerSetupModal } from '../organisms/PlayerSetupModal';
 import { PlayersPanel } from '../organisms/PlayersPanel';
 import { TurnPanel } from '../organisms/TurnPanel';
 import { WinModal } from '../organisms/WinModal';
 import { LegendBar } from '../molecules/LegendBar';
+import { PlayerCountSwitch } from '../molecules/PlayerCountSwitch';
 import { SagaLog } from '../molecules/SagaLog';
 import { GameLayout } from '../templates/GameLayout';
 
@@ -48,6 +50,10 @@ function DesktopGamePage({ onShowcase }: GamePageProps) {
         legend={<LegendBar />}
         side={
           <>
+            <div className="card pcount-card">
+              <CardTitle>Riders</CardTitle>
+              <PlayerCountSwitch value={game.playerCount} onChange={(n) => game.switchCount(n)} />
+            </div>
             <TurnPanel
               player={player}
               messageHtml={game.turnMsg}
@@ -97,7 +103,10 @@ function DesktopGamePage({ onShowcase }: GamePageProps) {
               onEnd={(won) => game.closeModalResolve(won)}
             />
           )}
-          {game.modal.kind === 'howto' && <HowToModal onClose={() => game.closeModalResolve(undefined)} />}
+          {game.modal.kind === 'howto' && (
+            <HowToModal playerCount={game.playerCount} onClose={() => game.closeModalResolve(undefined)} />
+          )}
+          {game.modal.kind === 'setup' && <PlayerSetupModal onPick={(n) => game.chooseCount(n)} />}
           {winner && <WinModal winner={winner} onPlayAgain={game.restart} />}
         </div>
       )}

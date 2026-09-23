@@ -8,7 +8,9 @@ import { BattleModal } from '../organisms/BattleModal';
 import { ChallengeModal } from '../organisms/ChallengeModal';
 import { EventModal } from '../organisms/EventModal';
 import { HowToModal } from '../organisms/HowToModal';
+import { PlayerSetupModal } from '../organisms/PlayerSetupModal';
 import { WinModal } from '../organisms/WinModal';
+import { PlayerCountSwitch } from '../molecules/PlayerCountSwitch';
 import { SagaLog } from '../molecules/SagaLog';
 import { Wheel } from '../molecules/Wheel';
 import { MobileBoard, type MobileBoardHandle } from './MobileBoard';
@@ -222,6 +224,10 @@ export function MobileGamePage({ onShowcase }: { onShowcase: () => void }) {
             <button className="m-sheet-row" onClick={() => { setMenuOpen(false); game.showHowto(); }}>
               ❓ <span>How to Play</span><em>›</em>
             </button>
+            <div className="m-sheet-riders">
+              <span>🐉 Riders</span>
+              <PlayerCountSwitch compact value={game.playerCount} onChange={(n) => game.switchCount(n)} />
+            </div>
             <button
               className="m-sheet-row"
               onClick={() => { game.toggleSound(); }}
@@ -261,7 +267,7 @@ export function MobileGamePage({ onShowcase }: { onShowcase: () => void }) {
       {confirmRestart && (
         <ConfirmDialog
           title="Restart game?"
-          bodyHtml="The current saga will be lost and both riders return to <b>Berk Village</b>. Are you sure?"
+          bodyHtml="The current saga will be lost and all riders return to <b>Berk Village</b>. Are you sure?"
           confirmLabel="Yes, restart"
           onConfirm={() => game.restart()}
           onCancel={() => setConfirmRestart(false)}
@@ -295,7 +301,10 @@ export function MobileGamePage({ onShowcase }: { onShowcase: () => void }) {
               onEnd={(won) => game.closeModalResolve(won)}
             />
           )}
-          {game.modal.kind === 'howto' && <HowToModal onClose={() => game.closeModalResolve(undefined)} />}
+          {game.modal.kind === 'howto' && (
+            <HowToModal playerCount={game.playerCount} onClose={() => game.closeModalResolve(undefined)} />
+          )}
+          {game.modal.kind === 'setup' && <PlayerSetupModal onPick={(n) => game.chooseCount(n)} />}
           {winner && <WinModal winner={winner} onPlayAgain={game.restart} />}
         </div>
       )}

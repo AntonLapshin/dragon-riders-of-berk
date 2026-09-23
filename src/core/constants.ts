@@ -36,6 +36,8 @@ export const IMG: Record<string, string> = {
     'https://image.qwenlm.ai/public_source/e75c73c4-95f2-4778-8dee-b1a388d0c0f5/15546e715-599d-4ac0-93de-7020d19ca44c.png',
   astrid:
     'https://image.qwenlm.ai/public_source/e75c73c4-95f2-4778-8dee-b1a388d0c0f5/12adf3274-48a1-422b-8745-499e2424e8ca.png',
+  stoick:
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' rx='48' fill='%23141d33'/%3E%3Ctext x='48' y='68' font-size='54' text-anchor='middle'%3E%F0%9F%A7%94%3C/text%3E%3C/svg%3E",
   board:
     'https://image.qwenlm.ai/public_source/e75c73c4-95f2-4778-8dee-b1a388d0c0f5/188fa123b-e287-4fee-a5df-e8b547c4516c.png',
 };
@@ -137,9 +139,23 @@ export interface PlayerState {
   skipWhy: 'net' | 'choice' | null;
 }
 
-export function createInitialPlayers(): PlayerState[] {
-  return [
-    { id: 0, name: 'Hiccup', avatar: IMG.hiccup, color: '#39d98a', dragons: [], pos: 0, skip: false, skipWhy: null },
-    { id: 1, name: 'Astrid', avatar: IMG.astrid, color: '#ffb020', dragons: [], pos: 0, skip: false, skipWhy: null },
-  ];
+/** Hot-seat player count: 2 riders, or 3 with Stoick joining. */
+export type PlayerCount = 2 | 3;
+
+/** Roster in seating order: Hiccup, Astrid, then Stoick (3-player games). */
+const ROSTER: Omit<PlayerState, 'dragons' | 'pos' | 'skip' | 'skipWhy'>[] = [
+  { id: 0, name: 'Hiccup', avatar: IMG.hiccup, color: '#39d98a' },
+  { id: 1, name: 'Astrid', avatar: IMG.astrid, color: '#ffb020' },
+  { id: 2, name: 'Stoick', avatar: IMG.stoick, color: '#4dd7fe' },
+];
+
+export function createInitialPlayers(count: PlayerCount = 2): PlayerState[] {
+  const n = count === 3 ? 3 : 2;
+  return ROSTER.slice(0, n).map((r) => ({
+    ...r,
+    dragons: [],
+    pos: 0,
+    skip: false,
+    skipWhy: null,
+  }));
 }

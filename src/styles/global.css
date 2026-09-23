@@ -3,7 +3,7 @@
 :root{
   --gold:#f0b429; --gold-2:#ffd766; --ink:#0b1220; --panel:#141d33; --panel-2:#1a2440;
   --line:rgba(240,180,41,.28); --text:#e8eefc; --muted:#9fb0d0;
-  --p0:#39d98a; --p1:#ffb020;
+  --p0:#39d98a; --p1:#ffb020; --p2:#4dd7fe;
 }
 *{box-sizing:border-box; margin:0; padding:0;
   scrollbar-width:thin; scrollbar-color:rgba(240,180,41,.55) rgba(255,255,255,.06)}
@@ -40,6 +40,37 @@ h1{
 }
 .sub{color:var(--muted); font-size:13px; margin-top:2px}
 .top-btns{display:flex; gap:8px; flex-wrap:wrap}
+/* ---------- player-count switch + setup modal ---------- */
+.pcount-card{padding-bottom:12px}
+.pcount{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.pcount-btn{
+  font-family:inherit; font-weight:900; font-size:13px; letter-spacing:.3px; cursor:pointer;
+  color:var(--muted); background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.16);
+  border-radius:12px; padding:10px 6px; transition:filter .12s ease, transform .12s ease;
+}
+.pcount-btn:hover{background:rgba(255,255,255,.12); color:#fff}
+.pcount-btn.active{
+  color:#3a2405; background:linear-gradient(180deg,var(--gold-2),#e8a020);
+  border-color:transparent; box-shadow:0 3px 0 #a86e12, 0 8px 22px rgba(232,160,32,.35);
+}
+.pcount.compact{grid-template-columns:1fr 1fr}
+.pcount.compact .pcount-btn{font-size:12px; padding:9px 4px}
+.setup-modal{max-width:560px; text-align:center}
+.setup-opts{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
+@media (max-width:560px){ .setup-opts{grid-template-columns:1fr} }
+.setup-opt{
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.13);
+  border-radius:16px; padding:14px 12px; display:flex; flex-direction:column; gap:8px;
+}
+.setup-avatars{display:flex; justify-content:center; gap:0}
+.setup-avatars img{
+  width:56px; height:56px; border-radius:50%; object-fit:cover; border:3px solid var(--gold);
+  background:#0b1220; box-shadow:0 0 14px rgba(240,180,41,.35);
+}
+.setup-avatars img + img{margin-left:-14px}
+.setup-name{font-family:'Cinzel Decorative',serif; font-size:17px; color:var(--gold-2)}
+.setup-desc{font-size:12.5px; font-weight:700; color:#cfdaf0; line-height:1.5; flex:1}
+.setup-desc b{color:#fff}
 /* ---------- buttons ---------- */
 .btn{
   font-family:inherit; font-weight:900; border:none; border-radius:12px; cursor:pointer;
@@ -430,6 +461,13 @@ h1{
 .m-sheet-row em{font-style:normal; font-size:11px; color:var(--muted); font-weight:700}
 .m-sheet-row.danger{border-color:rgba(255,93,93,.5); color:#ffb1ab}
 .m-sheet-row.ghost{opacity:.8}
+.m-sheet-riders{
+  display:flex; align-items:center; gap:10px; width:100%;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.13);
+  font-size:15px; font-weight:800; border-radius:12px; padding:10px 12px;
+}
+.m-sheet-riders > span{flex:none}
+.m-sheet-riders .pcount{flex:1}
 .m-sheet-close{
   margin-top:4px; border:none; border-radius:12px; padding:12px; cursor:pointer; font-family:inherit;
   font-weight:900; font-size:14px; color:var(--text); background:rgba(255,255,255,.1);

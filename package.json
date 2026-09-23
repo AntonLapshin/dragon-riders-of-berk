@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Dragon Riders of Berk — a Game-of-Life style 2-player hot-seat board game (React + TypeScript + Vite, Atomic Design).",
+    "description": "Dragon Riders of Berk — a Game-of-Life style 2-3 player hot-seat board game (React + TypeScript + Vite, Atomic Design).",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

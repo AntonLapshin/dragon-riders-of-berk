@@ -14,7 +14,7 @@ import {
 } from './constants';
 
 describe('createInitialPlayers', () => {
-  it('creates Hiccup and Astrid at Berk Village', () => {
+  it('creates Hiccup and Astrid at Berk Village by default', () => {
     const players = createInitialPlayers();
     expect(players).toHaveLength(2);
     expect(players[0].name).toBe('Hiccup');
@@ -25,6 +25,19 @@ describe('createInitialPlayers', () => {
       expect(p.skip).toBe(false);
       expect(p.skipWhy).toBeNull();
     }
+  });
+
+  it('adds Stoick as the third rider for 3-player games', () => {
+    const players = createInitialPlayers(3);
+    expect(players).toHaveLength(3);
+    expect(players.map((p) => p.name)).toEqual(['Hiccup', 'Astrid', 'Stoick']);
+    expect(players.map((p) => p.id)).toEqual([0, 1, 2]);
+    const stoick = players[2];
+    expect(stoick.pos).toBe(0);
+    expect(stoick.dragons).toEqual([]);
+    expect(stoick.avatar.length).toBeGreaterThan(0);
+    // Every rider has a distinct color so tokens and cards stay readable.
+    expect(new Set(players.map((p) => p.color)).size).toBe(3);
   });
 
   it('returns fresh state on every call', () => {

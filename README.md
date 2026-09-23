@@ -7,7 +7,7 @@
 
 ![Dragon Riders of Berk gameplay](screenshot.png)
 
-A 2-player hot-seat board game for the browser, built with **React + TypeScript + Vite** using **Atomic Design**. Spin the wheel, race from **Berk Village** to **The Alpha's Lair**, build your dragon flock, and bring down the Glacial Tyrant.
+A 2–3 player hot-seat board game for the browser, built with **React + TypeScript + Vite** using **Atomic Design**. Spin the wheel, race from **Berk Village** to **The Alpha's Lair**, build your dragon flock, and bring down the Glacial Tyrant. Choose **2 players (Hiccup vs Astrid)** or **3 players (Stoick joins the hunt)** on the setup screen.
 
 This is a full refactor of the original single-file (`index.html`) game: same rules, same look, same sounds — now with zero code duplication, pure game-logic modules, reusable components, and a live component gallery.
 

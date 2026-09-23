@@ -231,6 +231,24 @@ describe('advanceTurn', () => {
   it('is safe with a degenerate player count', () => {
     expect(advanceTurn(0, 0, { extraGranted: false, skipPending: false }).nextCurrent).toBe(0);
   });
+
+  it('rotates through all three riders in a 3-player game', () => {
+    expect(advanceTurn(0, 3, { extraGranted: false, skipPending: false })).toEqual({
+      nextCurrent: 1,
+      isExtra: false,
+      consumedSkip: false,
+    });
+    expect(advanceTurn(1, 3, { extraGranted: false, skipPending: false }).nextCurrent).toBe(2);
+    expect(advanceTurn(2, 3, { extraGranted: false, skipPending: false }).nextCurrent).toBe(0);
+  });
+
+  it('keeps the extra turn on the third rider without consuming a skip', () => {
+    expect(advanceTurn(2, 3, { extraGranted: true, skipPending: true })).toEqual({
+      nextCurrent: 2,
+      isExtra: true,
+      consumedSkip: false,
+    });
+  });
 });
 
 describe('chainWalks', () => {

@@ -1,12 +1,12 @@
-import { ALPHA_BASE, COURAGE, DRAGONS } from '../../core/constants';
+import { ALPHA_BASE, COURAGE, DRAGONS, type PlayerCount } from '../../core/constants';
 import { Button } from '../atoms/Button';
 import { Modal, ModalSub, ModalTitle } from '../atoms/Modal';
 
-export function HowToModal({ onClose }: { onClose: () => void }) {
+export function HowToModal({ onClose, playerCount }: { onClose: () => void; playerCount?: PlayerCount }) {
   return (
     <Modal className="htp">
       <ModalTitle>📜 HOW TO PLAY</ModalTitle>
-      <ModalSub>Dragon Riders of Berk — 2 players, hot-seat</ModalSub>
+      <ModalSub>Dragon Riders of Berk — {playerCount ? `${playerCount} players` : '2–3 players'}, hot-seat</ModalSub>
       <h4>🎯 Goal</h4>
       <ul>
         <li>

@@ -9,6 +9,7 @@ import {
   MAIN_SEGS,
   createInitialPlayers,
   type DragonId,
+  type PlayerCount,
   type PlayerState,
 } from '../core/constants';
 import {
@@ -33,6 +34,7 @@ export interface LogEntry {
 }
 
 export type ModalState =
+  | { kind: 'setup' }
   | { kind: 'event'; icon: string; title: string; html: string; accent: string; okLabel?: string }
   | { kind: 'move'; val: number; atStart: boolean; playerName: string }
   | { kind: 'challenge'; dragonId: DragonId; playerName: string }
@@ -53,6 +55,7 @@ export function useGame() {
   const last = tiles.length - 1;
 
   const [players, setPlayers] = useState<PlayerState[]>(() => createInitialPlayers());
+  const [playerCount, setPlayerCount] = useState<PlayerCount>(2);
   const [current, setCurrent] = useState(0);
   const [phase, setPhase] = useState<'play' | 'over'>('play');
   const [turnMsg, setTurnMsg] = useState('');
@@ -402,14 +405,71 @@ export function useGame() {
     }
   }, [awaitModal, movePlayer, nextTurn, phase, pushLog, resolveTile, syncPlayers, turnHint]);
 
+  /* ---------- saga setup (2 or 3 riders) ---------- */
+
+  /**
+   * Start a fresh saga with `count` riders. Only called from the setup
+   * modal on a fresh load (no turn in flight, no pending modal promise),
+   * so no generation guard is needed.
+   */
+  const beginSaga = useCallback(
+    (count: PlayerCount) => {
+      const fresh = createInitialPlayers(count);
+      setPlayerCount(count);
+      extraTurnRef.current = false;
+      busyRef.current = false;
+      currentRef.current = 0;
+      setCurrent(0);
+      setPhase('play');
+      setHighlight(null);
+      setFadeToken(null);
+      logId.current = 0;
+      setLogs([]);
+      syncPlayers(fresh);
+      const names =
+        fresh.length === 3
+          ? `<b>${fresh[0].name}</b> vs <b>${fresh[1].name}</b> vs <b>${fresh[2].name}</b>`
+          : `<b>${fresh[0].name}</b> vs <b>${fresh[1].name}</b>`;
+      pushLog(`🐉 The saga begins! ${names} — tame dragons and be the first to defeat the Alpha.`, '#f0b429');
+      turnHint(fresh[0]);
+      setSpinDisabled(false);
+      setModal({ kind: 'howto' });
+    },
+    [pushLog, syncPlayers, turnHint],
+  );
+
+  /** Pick the rider count from the setup modal (persists to `?players=`). */
+  const chooseCount = useCallback(
+    (count: PlayerCount) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('players', String(count));
+      window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+      beginSaga(count);
+    },
+    [beginSaga],
+  );
+
+  /**
+   * Switch rider counts mid-game: persist and reload so the new saga
+   * starts from completely clean state (no in-flight turn to corrupt).
+   */
+  const switchCount = useCallback((count: PlayerCount) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('players', String(count));
+    window.location.assign(url.toString());
+  }, []);
+
   /* ---------- init ---------- */
 
   useEffect(() => {
     if (howtoShown.current) return; // guard StrictMode double-mount in dev
     howtoShown.current = true;
-    pushLog('🐉 The saga begins! Tame dragons and be the first to defeat the Alpha.', '#f0b429');
-    setModal({ kind: 'howto' });
-    beginTurn();
+    const param = new URLSearchParams(window.location.search).get('players');
+    if (param === '2' || param === '3') {
+      beginSaga(Number(param) as PlayerCount);
+    } else {
+      setModal({ kind: 'setup' });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -424,6 +484,9 @@ export function useGame() {
     tiles,
     last,
     players,
+    playerCount,
+    chooseCount,
+    switchCount,
     current,
     phase,
     turnMsg,

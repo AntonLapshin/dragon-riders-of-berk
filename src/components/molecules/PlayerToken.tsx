@@ -9,8 +9,9 @@ interface PlayerTokenProps {
 
 /** Rider token riding the board (molecule). */
 export function PlayerToken({ player, tile, faded }: PlayerTokenProps) {
-  const ox = player.id === 0 ? -1.7 : 1.7;
-  const oy = player.id === 0 ? -1.4 : 1.4;
+  // Spread up to 3 rider tokens around the tile so they never fully overlap.
+  const [ox, oy] =
+    player.id === 0 ? [-1.7, -1.4] : player.id === 1 ? [1.7, -1.4] : [0, 1.8];
   return (
     <div
       id={`tok${player.id}`}
