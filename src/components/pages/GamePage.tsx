@@ -1,4 +1,6 @@
 import { useGame } from '../../hooks/useGame';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { MobileGamePage } from '../mobile/MobileGamePage';
 import { DRAGONS } from '../../core/constants';
 import { CardTitle } from '../atoms/CardTitle';
 import { AppHeader } from '../organisms/AppHeader';
@@ -21,6 +23,13 @@ interface GamePageProps {
 
 /** Full game page: header + board + side panel + modal overlay (page). */
 export function GamePage({ onShowcase }: GamePageProps) {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileGamePage onShowcase={onShowcase} />;
+  return <DesktopGamePage onShowcase={onShowcase} />;
+}
+
+/** Desktop two-column game view (page). */
+function DesktopGamePage({ onShowcase }: GamePageProps) {
   const game = useGame();
   const player = game.players[game.current];
   const winner = game.modal?.kind === 'win' ? game.players[game.modal.winnerId] : null;
