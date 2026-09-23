@@ -1,0 +1,8 @@
+/*
+ * Plain-CSS entry point for the demo app (issue #12 / M2-T3).
+ *
+ * All other styling lives in component-scoped, self-contained stylesheets
+ * (`src/styles/showcase.css` for the gallery and `src/styles/showcases.css`
+ * for the sample showcases), so this entry needs no `@tailwind` directives and
+ * no Tailwind build step. The showcase library is style-framework agnostic.
+ */

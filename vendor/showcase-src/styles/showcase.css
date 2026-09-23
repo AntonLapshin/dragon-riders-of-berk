@@ -1,0 +1,135 @@
+/*
+ * Plain-CSS styling for the Showcase gallery (issue #10 / M2-T1).
+ *
+ * Replaces the Tailwind utility classes that previously lived inline in
+ * `Showcase.tsx` with a self-contained, scoped stylesheet so the gallery
+ * renders without a Tailwind build step. Class names are prefixed with
+ * `showcase` and are specific to the gallery; no Tailwind directives here.
+ *
+ * The layout is a 4-cell grid (plan.md §19.2):
+ *   Cell 1 — sidebar header (title)
+ *   Cell 2 — breadcrumbs (file / variant path)
+ *   Cell 3 — sidebar nav (expandable file groups + variant list)
+ *   Cell 4 — canvas (renders the selected variant)
+ */
+.showcase {
+  display: grid;
+  height: 100vh;
+  width: 100%;
+  grid-template-columns: 16rem 1fr;
+  grid-template-rows: auto 1fr;
+  background-color: #f1f5f9;
+}
+
+/* Cell 1 — sidebar header */
+.showcase__header--sidebar {
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  padding: 0.75rem 1rem;
+}
+
+.showcase__header--sidebar h1 {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+/* Cell 2 — breadcrumbs */
+.showcase__breadcrumbs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  padding: 0.75rem 1.5rem;
+}
+
+.showcase__breadcrumbs h2 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+/* Cell 3 — sidebar nav */
+.showcase__nav {
+  overflow-y: auto;
+  border-right: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  padding: 0.5rem;
+}
+
+.showcase__group-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.showcase__group-button:hover {
+  background-color: #f8fafc;
+}
+
+.showcase__group-caret {
+  color: #94a3b8;
+}
+
+.showcase__variant-list {
+  margin: 0;
+  margin-left: 0.75rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid #e2e8f0;
+  list-style: none;
+}
+
+.showcase__variant-button {
+  width: 100%;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.showcase__variant-button--inactive {
+  color: #64748b;
+}
+
+.showcase__variant-button--inactive:hover {
+  background-color: #f8fafc;
+}
+
+.showcase__variant-button--active {
+  background-color: #eef2ff;
+  font-weight: 500;
+  color: #4338ca;
+}
+
+/* Cell 4 — canvas: renders the selected variant, anchored top-left */
+.showcase__canvas {
+  overflow: auto;
+  padding: 2rem;
+}
+
+.showcase__placeholder {
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+/* Buttons in the nav reset browser defaults. */
+.showcase__group-button,
+.showcase__variant-button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}

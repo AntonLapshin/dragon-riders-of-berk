@@ -3,10 +3,13 @@
 > A Game-of-Life style race across the Barbaric Archipelago — tame up to 5 dragons, then defeat the Alpha!
 
 **🎮 Play it live: https://antonlapshin.github.io/dragon-riders-of-berk/**
+**🧩 Component showcase: https://antonlapshin.github.io/dragon-riders-of-berk/?view=showcase**
 
 ![Dragon Riders of Berk gameplay](screenshot.png)
 
-A 2-player hot-seat board game for the browser. No build step, no dependencies — just open `index.html` or play on GitHub Pages. Spin the wheel, race from **Berk Village** to **The Alpha's Lair**, build your dragon flock, and bring down the Glacial Tyrant.
+A 2-player hot-seat board game for the browser, built with **React + TypeScript + Vite** using **Atomic Design**. Spin the wheel, race from **Berk Village** to **The Alpha's Lair**, build your dragon flock, and bring down the Glacial Tyrant.
+
+This is a full refactor of the original single-file (`index.html`) game: same rules, same look, same sounds — now with zero code duplication, pure game-logic modules, reusable components, and a live component gallery.
 
 ---
 
@@ -18,6 +21,7 @@ A 2-player hot-seat board game for the browser. No build step, no dependencies �
 - ⚔️ Final boss battle vs the Alpha with HP pips, plasma-blast crits & sound effects
 - 🔊 Retro WebAudio sound (roars, clashes, fanfares — no audio files needed)
 - 📜 In-game How-to-Play, saga log, turn skipping, extra turns, storm teleports
+- 🧩 Component Showcase page with URL deep-linking (`?view=showcase&file=Button&showcase=Gold`)
 
 ## 🎯 Goal
 
@@ -66,17 +70,61 @@ Each round: **your spin + flock power + Rider's Courage (+6)** vs **Alpha's spin
 | Hookfang | Monstrous Nightmare | ⚡4 |
 | Toothless | Night Fury | ⚡5 |
 
-## 🚀 Run locally
+---
+
+## 🛠️ Development
 
 ```bash
-# just open it — no build needed
-open index.html
-# or serve it
-npx serve .
+npm install   # install dependencies
+npm run dev   # start the dev server (http://localhost:5173)
+npm test      # run unit tests (Vitest — pure game logic in src/core)
+npm run build # type-check + production build into dist/
+npm run preview # preview the production build locally
 ```
+
+## 🧱 Project structure (Atomic Design)
+
+```
+src/
+├── core/          # pure game logic — no React, no DOM (unit-tested)
+│   ├── constants.ts  # dragons, artwork, board config, wheel segments
+│   ├── board.ts      # serpentine 59-tile path, tile typing, nest lookup
+│   ├── wheels.ts     # weighted picks + spin-target geometry
+│   └── battle.ts     # flock power + battle-round math
+├── utils/         # sleep() and other tiny pure helpers
+├── lib/           # sound engine (WebAudio singleton)
+├── hooks/
+│   └── useGame.ts    # full turn-loop state machine (view model)
+├── components/
+│   ├── atoms/        # Button, Chip, Avatar, Pip, Modal, CardTitle, Confetti
+│   ├── molecules/    # Wheel, BoardTile, LairTile, PlayerToken, PlayerCard,
+│   │                 # TurnHeader, HealthPips, SagaLog, LegendBar
+│   ├── organisms/    # Board, TurnPanel, PlayersPanel, AppHeader,
+│   │                 # EventModal, MoveChoiceModal, ChallengeModal,
+│   │                 # BattleModal, HowToModal, WinModal
+│   ├── templates/    # GameLayout
+│   └── pages/        # GamePage, ShowcasePage
+├── showcases/     # one `name` + variants per component file + registry
+├── styles/        # global.css (ported 1:1 from the original game)
+└── main.tsx / App.tsx  # entry + Game ⇄ Showcase routing (?view=showcase)
+
+vendor/            # vendored `showcase` gallery library source (see vendor/VENDOR.md)
+```
+
+### 🧩 Showcase page
+
+The gallery at `?view=showcase` is built on the
+[`showcase`](https://github.com/AntonLapshin/showcase) library's `useShowcase`
+view model: each file under `src/showcases/` exports a `name` constant plus one
+component per variant, registered in `src/showcases/index.ts`. Selection,
+sidebar expand/collapse and URL deep-linking (`?file=..&showcase=..`) all come
+from the library's pure core engine. The library isn't published to npm yet, so
+its source is vendored under `vendor/` (see `vendor/VENDOR.md`).
 
 ## 🌍 Deploy
 
-This repo deploys to **GitHub Pages** via GitHub Actions (`.github/workflows/deploy-pages.yml`, modeled on [html-to-pdf](https://github.com/AntonLapshin/html-to-pdf)). Every push to `main` publishes the site to:
+This repo deploys to **GitHub Pages** via GitHub Actions (`.github/workflows/deploy-pages.yml`).
+Every push to `main` runs tests, builds the Vite app (`dist/`, served under the
+`/dragon-riders-of-berk/` base path), and publishes it to:
 
 **https://antonlapshin.github.io/dragon-riders-of-berk/**

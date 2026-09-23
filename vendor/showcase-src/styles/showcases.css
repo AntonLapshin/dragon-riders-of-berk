@@ -1,0 +1,102 @@
+/*
+ * Plain-CSS styling for the sample showcase files (issue #11 / M2-T2):
+ * Button, Spinner, and Badge.
+ *
+ * Replaces the Tailwind utility classes that previously lived inline in
+ * `src/ui/showcases/*.tsx` with a self-contained, scoped stylesheet so the
+ * sample showcases render without a Tailwind build step. Class names are
+ * prefixed with `sample` and are specific to these demo variants; no Tailwind
+ * directives here.
+ *
+ * The showcases remain thin, dumb presentational components — the styling is
+ * purely visual and lives entirely in this stylesheet.
+ */
+
+/* ---- Button variants ---- */
+
+.sample-button {
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.sample-button--primary {
+  background-color: #4f46e5;
+  color: #ffffff;
+}
+
+.sample-button--primary:hover {
+  background-color: #4338ca;
+}
+
+.sample-button--secondary {
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #334155;
+}
+
+.sample-button--secondary:hover {
+  background-color: #f8fafc;
+}
+
+.sample-button--disabled {
+  background-color: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ---- Spinner variants ---- */
+
+.sample-spinner {
+  display: inline-block;
+  vertical-align: middle;
+  border: 2px solid #4f46e5;
+  border-top-color: transparent;
+  border-radius: 9999px;
+  animation: sample-spinner-spin 1s linear infinite;
+}
+
+.sample-spinner--emerald {
+  border-color: #059669;
+  border-top-color: transparent;
+}
+
+@keyframes sample-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Badge variants ---- */
+
+.sample-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sample-badge--slate {
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+.sample-badge--emerald {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.sample-badge--amber {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.sample-badge--indigo {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
