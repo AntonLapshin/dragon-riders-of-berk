@@ -23,7 +23,7 @@ export function PlayerSetupModal({ onPick }: PlayerSetupModalProps) {
             <b>Hiccup</b> vs <b>Astrid</b> — the classic duel for the Alpha.
           </div>
           <Button variant="gold" big onClick={() => onPick(2)}>
-            👥 PLAY WITH 2
+            PLAY WITH 2
           </Button>
         </div>
         <div className="setup-opt">
@@ -37,7 +37,7 @@ export function PlayerSetupModal({ onPick }: PlayerSetupModalProps) {
             <b>Hiccup</b> vs <b>Astrid</b> vs <b>Stoick</b> — the chief joins the hunt!
           </div>
           <Button variant="blue" big onClick={() => onPick(3)}>
-            👥👥 PLAY WITH 3
+            PLAY WITH 3
           </Button>
         </div>
       </div>

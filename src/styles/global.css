@@ -375,31 +375,26 @@ h1{
 .m-board-view .m-board-inner{position:absolute; top:0; left:0; will-change:transform}
 .m-board-view .board{border:none; outline:none; border-radius:0; box-shadow:none; width:100%}
 /* zoomed tiles stay legible: cqw now resolves against the enlarged board */
-.m-drag-hint{
-  position:absolute; left:50%; bottom:8px; transform:translateX(-50%); z-index:5; pointer-events:none;
-  font-size:10px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,.55);
-  background:rgba(4,8,16,.55); padding:4px 12px; border-radius:20px; border:1px solid rgba(255,255,255,.14);
-}
 /* floating action buttons */
 .m-fabs{
   position:fixed; left:0; right:0; bottom:calc(12px + env(safe-area-inset-bottom)); z-index:30;
-  display:flex; justify-content:space-between; align-items:flex-end; gap:12px; padding:0 16px; pointer-events:none;
+  display:flex; justify-content:space-between; align-items:center; gap:12px; padding:0 16px; pointer-events:none;
 }
 .m-fab{
   pointer-events:auto; border:none; cursor:pointer; font-family:inherit;
-  display:flex; flex-direction:column; align-items:center; gap:1px;
-  min-width:76px; min-height:76px; padding:12px 16px; border-radius:22px;
-  font-size:26px; font-weight:900;
+  display:flex; align-items:center; justify-content:center;
+  height:48px; min-height:48px; padding:0 22px; border-radius:14px;
+  font-size:15px; font-weight:900; letter-spacing:1px; text-transform:uppercase;
   box-shadow:0 10px 30px rgba(0,0,0,.55);
   transition:transform .12s ease, filter .12s ease;
 }
-.m-fab span{font-size:12px; letter-spacing:1px; text-transform:uppercase}
+.m-fab span{font-size:15px; letter-spacing:1px; text-transform:uppercase}
 .m-fab:active{transform:scale(.94)}
 .m-fab-spin{background:linear-gradient(180deg,var(--gold-2),#e8a020); color:#3a2405;
-  box-shadow:0 4px 0 #a86e12, 0 12px 30px rgba(232,160,32,.45); font-size:30px; min-width:96px}
+  box-shadow:0 4px 0 #a86e12, 0 12px 30px rgba(232,160,32,.45); min-width:120px}
 .m-fab-spin.disabled{opacity:.55; filter:grayscale(.4)}
 .m-fab-menu{background:rgba(20,29,51,.92); color:var(--text); border:1px solid rgba(255,255,255,.2);
-  backdrop-filter:blur(8px)}
+  backdrop-filter:blur(8px); width:48px; flex:none; padding:0; font-size:20px}
 /* spin wheel overlay */
 .m-spin-overlay{
   position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
@@ -417,7 +412,7 @@ h1{
 .m-spin-sub{font-size:12.5px; font-weight:800; color:var(--muted)}
 /* floating spin result + move options */
 .m-move-sheet{
-  position:fixed; left:10px; right:10px; bottom:calc(104px + env(safe-area-inset-bottom)); z-index:31;
+  position:fixed; left:10px; right:10px; bottom:calc(72px + env(safe-area-inset-bottom)); z-index:31;
   background:linear-gradient(165deg,rgba(28,39,69,.97),rgba(16,24,40,.97));
   border:1px solid rgba(240,180,41,.55); border-radius:20px; padding:14px;
   box-shadow:0 24px 60px rgba(0,0,0,.65); animation:pop .35s cubic-bezier(.2,1.45,.4,1);

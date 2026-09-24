@@ -148,7 +148,7 @@ export function MobileGamePage({ onShowcase }: { onShowcase: () => void }) {
       {/* Floating minimal controls */}
       <div className="m-fabs">
         <button className="m-fab m-fab-menu" onClick={() => setMenuOpen(true)} aria-label="Open menu">
-          ☰<span>Menu</span>
+          ☰
         </button>
         <button
           className={`m-fab m-fab-spin${spinFabDisabled ? ' disabled' : ''}`}
@@ -156,7 +156,7 @@ export function MobileGamePage({ onShowcase }: { onShowcase: () => void }) {
           disabled={spinFabDisabled}
           aria-label="Spin the wheel"
         >
-          🎡<span>{spinOverlay ? 'Spinning…' : 'Spin'}</span>
+          <span>{spinOverlay ? 'Spinning…' : 'Spin'}</span>
         </button>
       </div>
 

@@ -21,7 +21,7 @@ export function PlayerCountSwitch({ value, onChange, compact }: PlayerCountSwitc
           }}
           title={n === 2 ? 'Hiccup vs Astrid' : 'Hiccup vs Astrid vs Stoick'}
         >
-          {n === 2 ? '👥 2 Players' : '👥👥 3 Players'}
+          {n === 2 ? '2 Players' : '3 Players'}
         </button>
       ))}
     </div>

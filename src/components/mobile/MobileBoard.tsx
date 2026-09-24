@@ -181,7 +181,6 @@ export const MobileBoard = forwardRef<MobileBoardHandle, MobileBoardProps>(funct
       >
         <Board tiles={tiles} players={players} highlight={highlight} fadeToken={fadeToken} />
       </div>
-      <div className="m-drag-hint">⋮⋮ drag to explore ⋮⋮</div>
     </div>
   );
 });
