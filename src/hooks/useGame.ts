@@ -325,6 +325,11 @@ export function useGame() {
    * Advance to the next turn. The engine arbitrates extra turns vs pending
    * skips: an extra turn stays on the same player WITHOUT consuming a
    * pending skip (the skip is served on the following turn instead).
+   *
+   * IMPORTANT: on the extra-turn path we must NOT route through beginTurn(),
+   * because beginTurn() serves (and clears) any pending skip immediately —
+   * that ate the CATCH+FEAST reward spin whenever a ±1 forfeit skip was
+   * already pending on the same turn.
    */
   const nextTurn = useCallback(
     (extraGranted: boolean) => {
@@ -335,10 +340,14 @@ export function useGame() {
       });
       if (adv.isExtra) {
         pushLog(`✨ <b>${finished.name}</b> takes an extra turn!`, finished.color);
-      } else {
-        currentRef.current = adv.nextCurrent;
-        setCurrent(adv.nextCurrent);
+        // Start the extra spin directly; the pending skip (if any) stays
+        // on the player and is served after the extra turn.
+        turnHint(finished);
+        setSpinDisabled(false);
+        return;
       }
+      currentRef.current = adv.nextCurrent;
+      setCurrent(adv.nextCurrent);
       beginTurn();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
