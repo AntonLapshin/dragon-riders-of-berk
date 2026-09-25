@@ -35,7 +35,7 @@ export function ChallengeModal({ dragonId, playerName, onDone }: ChallengeModalP
   };
 
   return (
-    <Modal>
+    <Modal className="challenge-modal">
       <ModalTitle>🥚 WILD DRAGON SIGHTED!</ModalTitle>
       <ModalSub>
         <>A Taming Spin Challenge awaits, {playerName}!</>
@@ -53,22 +53,24 @@ export function ChallengeModal({ dragonId, playerName, onDone }: ChallengeModalP
           <div className="cm-wheel">
             <Wheel ref={wheelRef} segs={CHALLENGE_SEGS} maxWidth={190} label="Taming wheel" />
           </div>
-          {!result && (
-            <Button variant="gold" big disabled={spinning} onClick={spin}>
-              🎡 SPIN THE TAMING WHEEL
-            </Button>
-          )}
-          {result && (
-            <div className="cm-result">
-              <div className={`cm-res ${result.key}`}>
-                {result.icon} {result.text}
-                <span>{result.desc}</span>
-              </div>
-              <Button variant="gold" onClick={() => onDone(result.key)}>
-                OK ➤
+          <div className="cm-action">
+            {!result && (
+              <Button variant="gold" big disabled={spinning} onClick={spin}>
+                🎡 SPIN THE TAMING WHEEL
               </Button>
-            </div>
-          )}
+            )}
+            {result && (
+              <div className="cm-result">
+                <div className={`cm-res ${result.key}`}>
+                  {result.icon} {result.text}
+                  <span>{result.desc}</span>
+                </div>
+                <Button variant="gold" onClick={() => onDone(result.key)}>
+                  OK ➤
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Modal>
